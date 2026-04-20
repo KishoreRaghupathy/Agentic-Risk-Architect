@@ -496,7 +496,7 @@ if __name__ == "__main__":
     try:
         df = fetch_historical_data(TEST_TICKER)
         print(f"  [OK]  {len(df)} rows fetched  |  Columns: {list(df.columns)}")
-        print(f"  [OK]  Date range: {df.index.min().date()} → {df.index.max().date()}")
+        print(f"  [OK]  Date range: {df.index.min().date()} -> {df.index.max().date()}")
     except DataLoaderError as e:
         print(f"  [FAIL]  {e}")
 
