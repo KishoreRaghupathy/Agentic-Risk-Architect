@@ -25,7 +25,8 @@ class RiskOrchestrator:
     
     def __init__(self, model_data: dict, news_headlines: list):
         self.model_data = model_data # From Day 2
-        self.news_headlines = news_headlines # From Day 1
+        # Handle "News Gap": Gracefully report no recent data if list is empty
+        self.news_headlines = news_headlines if news_headlines else ["No Recent Data"]
         
         # Configure LLM backend
         self.llm = self._initialize_llm()

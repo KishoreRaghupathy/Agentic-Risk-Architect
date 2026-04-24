@@ -88,14 +88,16 @@ class RiskEngine:
             "F1": f1_score(y, y_pred)
         }
 
-    def generate_explanations(self, X_sample: pd.DataFrame):
+    def generate_explanations(self, X_sample: pd.DataFrame) -> Dict[str, float]:
         """Generates SHAP values to explain the 'Why' behind a Risk Flag."""
         # Use native XGBoost SHAP calculation to bypass shap library parser bugs on v2.0+
         booster = self.model.get_booster()
         shap_values_with_bias = booster.predict(xgb.DMatrix(X_sample), pred_contribs=True)
         # XGBoost pred_contribs returns [features + 1] where the last column is the expected value (bias)
-        shap_values = shap_values_with_bias[:, :-1]
-        return shap_values
+        shap_values = shap_values_with_bias[0, :-1]
+        
+        # Ensure SHAP values are passed as a serializable dictionary
+        return {col: float(val) for col, val in zip(X_sample.columns, shap_values)}
 
     def _calc_rsi(self, series, period=14):
         delta = series.diff()
