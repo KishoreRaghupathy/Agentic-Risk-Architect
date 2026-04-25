@@ -41,7 +41,7 @@ class RiskOrchestrator:
         if not os.getenv("GROQ_API_KEY") or not os.getenv("GOOGLE_API_KEY"):
             raise RuntimeError("Missing required API keys (GROQ_API_KEY, GOOGLE_API_KEY) in environment.")
 
-        return LLM(model="groq/llama3-70b-8192"), LLM(model="gemini/gemini-1.5-pro")
+        return LLM(model="groq/llama-3.3-70b-versatile"), LLM(model="gemini/gemini-1.5-pro")
         
     def setup_agents(self):
         """Initializes the three AI personas."""
