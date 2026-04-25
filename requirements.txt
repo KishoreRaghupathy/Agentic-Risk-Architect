@@ -22,6 +22,8 @@ anthropic>=0.20.0
 crewai>=0.22.0
 langchain-google-genai>=1.0.0
 langchain-openai>=0.1.0
+langchain-groq>=0.1.0
+litellm>=1.0.0
 
 # Application
 streamlit>=1.30.0

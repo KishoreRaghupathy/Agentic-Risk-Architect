@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel
-from crewai import Agent, Task, Crew, Process
+from crewai import Agent, Task, Crew, Process, LLM
 
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI
@@ -8,9 +8,9 @@ except ImportError:
     ChatGoogleGenerativeAI = None
 
 try:
-    from langchain_openai import ChatOpenAI
+    from langchain_groq import ChatGroq
 except ImportError:
-    ChatOpenAI = None
+    ChatGroq = None
 
 # Define Structured Output for the Final Advisory
 class RiskAdvisory(BaseModel):
@@ -25,26 +25,27 @@ class RiskOrchestrator:
     
     def __init__(self, model_data: dict, news_headlines: list):
         self.model_data = model_data # From Day 2
-        # Handle "News Gap": Gracefully report no recent data if list is empty
-        self.news_headlines = news_headlines if news_headlines else ["No Recent Data"]
         
-        # Configure LLM backend
-        self.llm = self._initialize_llm()
+        # Reliability Check: Verify NewsAPI headlines are present before proceeding
+        if not news_headlines:
+            raise ValueError("No recent headlines pulled from NewsAPI. Halting risk assessment.")
+            
+        self.news_headlines = news_headlines
+        
+        # Configure Hybrid LLM backend
+        self.groq_llm, self.gemini_llm = self._initialize_llms()
         self.setup_agents()
         
-    def _initialize_llm(self):
-        """Initializes the LLM backend based on available API keys."""
-        if os.getenv("GOOGLE_API_KEY") and ChatGoogleGenerativeAI:
-            # Using Gemini backend as one of the preferred options
-            return ChatGoogleGenerativeAI(model="gemini-3.1-pro")
-        elif os.getenv("OPENAI_API_KEY") and ChatOpenAI:
-            # Fallback/Alternative Open AI backend
-            return ChatOpenAI(model="gpt-4-turbo")
-        return None # Falls back to CrewAI's default if no specific backend is configured
+    def _initialize_llms(self):
+        """Initializes the Hybrid LLM backend using CrewAI's native LLM class."""
+        if not os.getenv("GROQ_API_KEY") or not os.getenv("GOOGLE_API_KEY"):
+            raise RuntimeError("Missing required API keys (GROQ_API_KEY, GOOGLE_API_KEY) in environment.")
+
+        return LLM(model="groq/llama3-70b-8192"), LLM(model="gemini/gemini-1.5-pro")
         
     def setup_agents(self):
         """Initializes the three AI personas."""
-        # 1. Qualitative Agent
+        # 1. Qualitative Agent (Speed Layer)
         self.sentiment_analyst = Agent(
             role='Senior Market Sentiment Analyst',
             goal='Analyze news for hidden financial risks',
@@ -52,27 +53,28 @@ class RiskOrchestrator:
             headlines to find market fear or systemic risks.""",
             verbose=True,
             allow_delegation=False,
-            llm=self.llm
+            llm=self.groq_llm
         )
 
-        # 2. Quantitative Agent
+        # 2. Quantitative Agent (Speed Layer)
         self.quant_auditor = Agent(
             role='Lead Quantitative Auditor',
             goal='Explain ML model outputs to non-technical stakeholders',
             backstory="""You specialize in XAI (Explainable AI). You turn 
             SHAP values and XGBoost probabilities into narrative logic.""",
             verbose=True,
-            llm=self.llm
+            llm=self.groq_llm
         )
 
-        # 3. The Decision Agent
+        # 3. The Decision Agent (Reasoning Layer)
         self.cro = Agent(
             role='Chief Risk Officer',
-            goal='Synthesize all data into a final risk advisory',
+            goal='Synthesize all data into a final risk advisory and strictly enforce output structure.',
             backstory="""You are the final gatekeeper. You balance the news 
-            and the numbers to issue high-stakes trade advisories.""",
+            and the numbers to issue high-stakes trade advisories. You must strictly
+            return your final output in the requested JSON schema.""",
             verbose=True,
-            llm=self.llm
+            llm=self.gemini_llm
         )
 
     def run_sprint(self):
