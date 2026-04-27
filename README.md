@@ -1,6 +1,12 @@
 # 🛡️ Agentic Risk Architect
 ### Autonomous Financial Intelligence & Explainable Risk Orchestration
 
+[![Live Demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://YOUR-APP-NAME.streamlit.app)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
+![XGBoost](https://img.shields.io/badge/XGBoost-Powered-FF6600?style=flat)
+![Groq](https://img.shields.io/badge/Groq-Llama--3-00A86B?style=flat)
+![Gemini](https://img.shields.io/badge/Gemini-1.5--Pro-4285F4?style=flat&logo=google&logoColor=white)
+
 ![Project Banner](assets/banner.png)
 
 ## 🌟 Overview
