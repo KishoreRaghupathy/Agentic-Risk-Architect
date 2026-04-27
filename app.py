@@ -11,6 +11,15 @@ from src.agents.orchestrator import RiskOrchestrator
 # Load environment variables (force override to catch changes while server is running)
 load_dotenv(override=True)
 
+# Bridge Streamlit Cloud Secrets into os.environ for downstream modules
+# This allows the orchestrator and data_loader to use os.getenv() seamlessly
+for key in ["GROQ_API_KEY", "GOOGLE_API_KEY", "NEWS_API_KEY"]:
+    if key not in os.environ:
+        try:
+            os.environ[key] = st.secrets[key]
+        except (KeyError, FileNotFoundError):
+            pass  # Key not in Streamlit secrets either; will be caught later
+
 st.set_page_config(page_title="Agentic Risk Architect", layout="wide", page_icon="📈")
 
 st.title("🛡️ Agentic Risk Architect")
@@ -23,11 +32,15 @@ with st.sidebar:
     analyze_btn = st.button("Run Risk Analysis")
 
 if analyze_btn:
-    if not os.getenv("NEWS_API_KEY"):
-        st.error("Please set NEWS_API_KEY in the .env file.")
-        st.stop()
-    if not (os.getenv("GOOGLE_API_KEY") and os.getenv("GROQ_API_KEY")):
-        st.error("Please set both GOOGLE_API_KEY and GROQ_API_KEY in the .env file.")
+    # Check for keys in both os.environ (Streamlit Cloud) and .env (Local)
+    missing_keys = []
+    if not os.getenv("NEWS_API_KEY"): missing_keys.append("NEWS_API_KEY")
+    if not os.getenv("GOOGLE_API_KEY"): missing_keys.append("GOOGLE_API_KEY")
+    if not os.getenv("GROQ_API_KEY"): missing_keys.append("GROQ_API_KEY")
+
+    if missing_keys:
+        st.error(f"Missing API Keys: {', '.join(missing_keys)}")
+        st.info("💡 **Tip:** If running locally, add these to your `.env` file. If deployed on Streamlit Cloud, add them to the **Secrets** dashboard.")
         st.stop()
 
     st.info(f"Initiating workflow for {ticker}...")
